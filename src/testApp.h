@@ -4,6 +4,7 @@
 
 #include "ofMain.h"
 #include "ofxOpenCv.h"
+#include "ofxUI.h"
 
 #include "ofxHistogram/ofxHistogram.h"
 
@@ -31,6 +32,7 @@ class testApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 		void loadKeyPoint();
+		void drawGUI();
 
 		ofImage image;
 
@@ -46,4 +48,10 @@ class testApp : public ofBaseApp{
 
 		ofxHistogram genuine_total;
 		ofxHistogram impostor_total;
+
+
+		ofTrueTypeFont verdana;
+
+		ofxUICanvas *gui; 
+		void guiEvent(ofxUIEventArgs &e);
 };
