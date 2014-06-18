@@ -51,7 +51,7 @@ public:
 		return os;
 	}
 
-	void draw(int x, int y, int width, int height)
+	void draw(int x, int y, int width, float height)
 	{
 		int max = 0;
 		int min = 0;
@@ -88,8 +88,50 @@ public:
 		ofPopStyle();
 		ofPopMatrix();
 	}
+	// 주어진 max_count 크기로 정규화하여 출력
+	//--------------------------------------------------------------
+	void draw(int x, int y, int width, int height, int max_count)
+	{
+		int max = 0;
+		int min = 0;
+		getMaxMinCount(&max, &min);
+		int i = 0;
+
+		// data의 key의 최대값
+		int maxBinSize = data.size();
+
+		// 색상 채우기
+		if(data.size() != bin_color.size())
+		{
+			bin_color.resize(data.size());
+
+			for(int i=0; i<bin_color.size(); ++i)
+			{
+				bin_color[i] = ofColor( ofRandom(255), ofRandom(255), ofRandom(255), ofRandom(255) );
+			}
+		}
+
+
+		ofPushMatrix();
+		ofPushStyle();
+
+		ofTranslate(x, height + y);
+		ofScale(width, -((float)(height * max) / max_count), 1);
+
+		for(iterator = data.begin() ; iterator != data.end(); ++iterator, ++i)
+		{
+			ofSetColor(bin_color[i]);
+			ofRect(i * 1.0 / maxBinSize, 0, 1.0 / maxBinSize, 
+				(float)(iterator->second) / (float)max > (float)max_count / max ? (float)max_count / max : (float)(iterator->second) / (float)max );
+		}			
+
+		ofPopStyle();
+		ofPopMatrix();
+	}
 	vector<ofColor>	bin_color;
 
+	// 그래프의 색상을 입력받아 저장
+	//--------------------------------------------------------------
 	void setColor(ofColor color)
 	{
 		if(data.size() != bin_color.size())
@@ -97,6 +139,23 @@ public:
 		
 		for(int i=0; i<bin_color.size(); ++i)
 			bin_color[i] = color;
+	}
+
+	// 최대/최소 개수 반환
+	//--------------------------------------------------------------
+	void getMaxMinCount(int * max, int * min = NULL)
+	{
+		*max = -1;
+		if(min != NULL)
+			*min = 10000000000;
+
+		for(iterator = data.begin() ; iterator != data.end(); ++iterator)
+		{
+			if(iterator->second > *max)
+				*max = iterator->second;
+			if(min != NULL && iterator->second < *min)
+				*min = iterator->second;
+		}
 	}
 
 	// 중간에 빈(또는 생략된) bin을 추가함
@@ -119,6 +178,8 @@ public:
 		}
 	}
 
+	// 최대/최소값 범위 수정
+	//--------------------------------------------------------------
 	void resize(int min, int max)
 	{
 		this->min = min;
@@ -186,21 +247,7 @@ protected:
 		return (v / width)*width + min;
 	}
 
-	// 최대/최소 개수 반환
-	//--------------------------------------------------------------
-	void getMaxMinCount(int * max, int * min)
-	{
-		*max = -1;
-		*min = 10000000000;
 
-		for(iterator = data.begin() ; iterator != data.end(); ++iterator)
-		{
-			if(iterator->second > *max)
-				*max = iterator->second;
-			if(iterator->second < *min)
-				*min = iterator->second;
-		}
-	}
 
 
 };

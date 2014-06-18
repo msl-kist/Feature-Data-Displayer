@@ -65,6 +65,10 @@ void testApp::draw(){
 			ofSetColor(ofColor::green);
 		ofCircle(ofPoint(keypoints[i].pt.x, keypoints[i].pt.y), 3);
 	}
+
+	//ofNoFill();
+	//ofSetColor(ofColor::red);
+	//ofCircle(ofPoint(keypoints[839].pt.x, keypoints[839].pt.y),10);
 	ofPopStyle();
 
 	// 배경 사각형 출력
@@ -74,12 +78,22 @@ void testApp::draw(){
 	ofPopStyle();
 
 	if(selectedKeypointIndex == NOT_KEYPOINT)
-	{
-		genuine_total.draw(image.width, 0, 640, 480);
-		impostor_total.draw(image.width,0, 640, 480);
+	{ 
+		int max_g, max_i;
+		genuine_total.getMaxMinCount(&max_g);
+		impostor_total.getMaxMinCount(&max_i);
+		int max = max_g > max_i ? max_g : max_i;
+		
+		genuine_total.draw(image.width, 0, 640, 480, max_g);
+		impostor_total.draw(image.width,0, 640, 480, max_i);
 	} else {
-		genuine.draw(image.width, 0, 640, 480);
-		impostor.draw(image.width,0, 640, 480);
+		int max_g, max_i;
+		genuine.getMaxMinCount(&max_g);
+		impostor.getMaxMinCount(&max_i);
+		int max = max_g > max_i ? max_g : max_i;
+
+		genuine.draw(image.width, 0, 640, 480, max_g);
+		impostor.draw(image.width,0, 640, 480, max_i);
 	}
 }
 
@@ -99,6 +113,7 @@ void testApp::keyPressed(int key){
 		loadFile(name, &impostor_total);
 		impostor_total.setColor(ofColor(50, 200, 50, 0));
 	}
+
 }
 
 //--------------------------------------------------------------
