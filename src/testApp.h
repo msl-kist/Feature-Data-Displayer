@@ -42,6 +42,8 @@ class testApp : public ofBaseApp{
 		ofxHistogram genuine;
 		ofxHistogram impostor;
 
+		int whole_file_index;
+
 		ofxHistogram genuine_total;
 		ofxHistogram impostor_total;
 };

@@ -1,5 +1,7 @@
 #include "testApp.h"
 
+char * whole_files[3] = {"[Match_count]", "[Original]", "[rep_div_med]"};
+
 //--------------------------------------------------------------
 void testApp::setup(){
 	// 이미지 로드
@@ -13,13 +15,15 @@ void testApp::setup(){
 	selectedKeypointIndex = NOT_KEYPOINT;
 	processed = true;
 
+	whole_file_index = 0;
+
 	char name[100];
 
-	sprintf(name, "data/result_genuine.txt");
+	sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
 	loadFile(name, &genuine_total);
 	genuine_total.setColor(ofColor(200, 50, 50, 100));
 
-	sprintf(name, "data/result_imposter.txt");
+	sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
 	loadFile(name, &impostor_total);
 	impostor_total.setColor(ofColor(50, 200, 50, 0));
 }
@@ -81,7 +85,20 @@ void testApp::draw(){
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
+	if(key == ' ')
+	{
+		char name[100];
 
+		whole_file_index = (whole_file_index + 1) % 3;
+
+		sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
+		loadFile(name, &genuine_total);
+		genuine_total.setColor(ofColor(200, 50, 50, 100));
+
+		sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
+		loadFile(name, &impostor_total);
+		impostor_total.setColor(ofColor(50, 200, 50, 0));
+	}
 }
 
 //--------------------------------------------------------------
