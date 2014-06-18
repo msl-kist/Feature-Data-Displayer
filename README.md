@@ -9,4 +9,8 @@ Feature-Data-Displayer
 
 ![](https://raw.githubusercontent.com/msl-kist/Feature-Data-Displayer/master/screenshots/screenshot.png)
 
+## ofxHistogram
 - 이러한 시스템을 구현하기 위하여 ofxHistogram 구현
+- __표본을 하나씩 추가__하거나 __한번에 bin에 표본수(count)를 저장__할 수 있음
+- cout에 << 연산자로 곧바로 값을 콘솔 화면 상에 출력할 수 있음
+- testApp에서 draw(x, y, width, height)로 바로 그려볼 수 있음 
