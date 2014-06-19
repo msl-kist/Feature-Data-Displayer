@@ -128,6 +128,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofxHistogram\ofxHistogram.h" />
+    <ClInclude Include="src\ofxHistogram\ofxHistogramROC.h" />
+    <ClInclude Include="src\ROC_Calc.h" />
     <ClInclude Include="src\testApp.h" />
     <ClInclude Include="..\..\..\addons\ofxCv\src\ofxCv.h" />
     <ClInclude Include="..\..\..\addons\ofxCv\libs\CLD\include\CLD\ETF.h" />

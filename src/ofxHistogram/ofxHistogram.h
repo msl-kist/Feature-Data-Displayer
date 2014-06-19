@@ -88,6 +88,9 @@ public:
 		ofPopStyle();
 		ofPopMatrix();
 	}
+
+	
+
 	// 주어진 max_count 크기로 정규화하여 출력
 	//--------------------------------------------------------------
 	void draw(int x, int y, int width, int height, int max_count)
@@ -147,7 +150,7 @@ public:
 	{
 		*max = -1;
 		if(min != NULL)
-			*min = 10000000000;
+		*min = 10000000000;
 
 		for(iterator = data.begin() ; iterator != data.end(); ++iterator)
 		{
@@ -157,6 +160,8 @@ public:
 				*min = iterator->second;
 		}
 	}
+
+
 
 	// 중간에 빈(또는 생략된) bin을 추가함
 	//--------------------------------------------------------------

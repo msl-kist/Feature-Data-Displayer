@@ -18,14 +18,36 @@ void testApp::setup(){
 	whole_file_index = 0;
 
 	char name[100];
+	ROC.init();
 
 	sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
-	loadFile(name, &genuine_total);
+	loadFile(name, &genuine_total, GENUINE);
 	genuine_total.setColor(ofColor(200, 50, 50, 100));
 
 	sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
-	loadFile(name, &impostor_total);
+	loadFile(name, &impostor_total, IMPOSTOR);
 	impostor_total.setColor(ofColor(50, 200, 50, 0));
+
+	
+	ROC.update();
+
+	EER = 1;
+	ROC_curve.clear();
+	for(int i = 0; i < ROC.i; i++)
+	{
+		ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
+		
+		EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
+		if(EER > EER_Candidate)
+		{
+			EER = EER_Candidate;
+			EER_bin = i;
+		}
+	}
+	ROC_curve.resize(0, ROC.Specificity.size());
+	ROC_curve.setColor(ofColor(255, 255, 0, 100));
+
+
 }
 
 //--------------------------------------------------------------
@@ -35,15 +57,18 @@ void testApp::update(){
 		genuine.clear();
 		impostor.clear();
 
+		ROC_curve.clear();
+
 		char name[100];
 
 		sprintf(name, "data/genuine/2_%d",selectedKeypointIndex);
-		loadFile(name, &genuine);
+		loadFile(name, &genuine, GENUINE);
 		genuine.setColor(ofColor(200, 50, 50, 100));
 
 		sprintf(name, "data/impostor/3_%d", selectedKeypointIndex);
-		loadFile(name, &impostor);
+		loadFile(name, &impostor, IMPOSTOR);
 		impostor.setColor(ofColor(50, 200, 50, 0));
+
 
 		processed = true;
 	}
@@ -86,6 +111,9 @@ void testApp::draw(){
 		
 		genuine_total.draw(image.width, 0, 640, 480, max_g);
 		impostor_total.draw(image.width,0, 640, 480, max_i);
+		
+		ROC_curve.draw(image.width, 500, 500, 480, EER_bin);
+
 	} else {
 		int max_g, max_i;
 		genuine.getMaxMinCount(&max_g);
@@ -99,6 +127,8 @@ void testApp::draw(){
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
+	
+	ROC.init();
 	if(key == ' ')
 	{
 		char name[100];
@@ -106,14 +136,32 @@ void testApp::keyPressed(int key){
 		whole_file_index = (whole_file_index + 1) % 3;
 
 		sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
-		loadFile(name, &genuine_total);
+		loadFile(name, &genuine_total, GENUINE);
 		genuine_total.setColor(ofColor(200, 50, 50, 100));
 
 		sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
-		loadFile(name, &impostor_total);
+		loadFile(name, &impostor_total, IMPOSTOR);
 		impostor_total.setColor(ofColor(50, 200, 50, 0));
 	}
 
+	//ROC curve
+	ROC.update();
+
+	ROC_curve.clear();
+	EER = 1;
+	for(int i = 0; i < ROC.i; i++)
+	{
+		ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
+		
+		EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
+		if(EER > EER_Candidate)
+		{
+			EER = EER_Candidate;
+			EER_bin = i;
+		}
+	}
+	ROC_curve.resize(0, ROC.Specificity.size());
+	ROC_curve.setColor(ofColor(255, 255, 0, 100));
 }
 
 //--------------------------------------------------------------
@@ -150,7 +198,26 @@ void testApp::mousePressed(int x, int y, int button){
 		processed = false;
 	}
 	else
+	{
 		selectedKeypointIndex = NOT_KEYPOINT;
+
+
+		EER = 1;
+
+		//ROC curve
+		for(int i = 0; i < ROC.i; i++)
+		{
+			ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
+			
+			EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
+			if(EER > EER_Candidate)
+			{
+				EER = EER_Candidate;
+				EER_bin = i;
+			}
+		}
+		ROC_curve.resize(0, ROC.Specificity.size());
+	}
 }
 
 //--------------------------------------------------------------
@@ -173,7 +240,7 @@ void testApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
-void testApp::loadFile( char * name, ofxHistogram * distribution )
+void testApp::loadFile( char * name, ofxHistogram * distribution, TYPE mode)
 {
 	FILE *file;
 	int distance, count; 
@@ -184,6 +251,12 @@ void testApp::loadFile( char * name, ofxHistogram * distribution )
 		fscanf(file,"%d %d\n",&distance,&count);
 
 		distribution->assign(distance, count);
+
+		if(mode == GENUINE) 
+			ROC.Genuine.push_back(std::make_pair(distance, count));
+		else 
+			ROC.Imposter.push_back(std::make_pair(distance, count));	
+
 		if(feof(file)){
 			break;
 		}
