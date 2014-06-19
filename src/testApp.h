@@ -33,6 +33,9 @@ class testApp : public ofBaseApp{
 		void mouseMoved(int x, int y );
 		void mouseDragged(int x, int y, int button);
 		void mousePressed(int x, int y, int button);
+
+		void setNormalizationValues();
+
 		void mouseReleased(int x, int y, int button);
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
@@ -57,10 +60,18 @@ class testApp : public ofBaseApp{
 		ofxHistogram genuine_total;
 		ofxHistogram impostor_total;
 
+		ofxHistogram * current_genuine;
+		ofxHistogram * current_impostor;
 
 		ofTrueTypeFont verdana;
 
 		ofxUICanvas *gui; 
 		void guiEvent(ofxUIEventArgs &e);
 		void loadSortedIndexList( int whole_file_index );
+
+		float normalizeValue_genuine;
+		float normalizeValue_Impostor;
+
+		bool isGenuineFirst;
+		bool isFixedNormalization;
 };

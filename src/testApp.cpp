@@ -19,6 +19,8 @@ void testApp::setup(){
 	selectedKeypointIndex = NOT_KEYPOINT;
 	selectedKeypointRank = 0;
 	processed = true;
+	isGenuineFirst = false;
+	isFixedNormalization = false;
 
 	whole_file_index = 0;
 
@@ -32,11 +34,17 @@ void testApp::setup(){
 	loadFile(name, &impostor_total);
 	impostor_total.setColor(ofColor::red);
 
+	current_genuine = &genuine_total;
+	current_impostor = &impostor_total;
+
 	loadSortedIndexList(whole_file_index);
 
 	// GUI
 	//==============================================================
 	drawGUI();
+
+	// GUI의 normalization value를 지정
+	setNormalizationValues();
 }
 
 //--------------------------------------------------------------
@@ -55,6 +63,9 @@ void testApp::update(){
 		sprintf(name, "data/impostor/3_%d", selectedKeypointIndex);
 		loadFile(name, &impostor);
 		impostor.setColor(ofColor::red);
+
+		// GUI의 normalization value를 저장
+		setNormalizationValues();
 
 		processed = true;
 	}
@@ -103,24 +114,16 @@ void testApp::draw(){
 	ofPushMatrix();
 	ofPushStyle();
 	ofSetColor(ofColor::white);
-	if(selectedKeypointIndex == NOT_KEYPOINT)
-	{ 
-		int max_g, max_i;
-		genuine_total.getMaxMinCount(&max_g);
-		impostor_total.getMaxMinCount(&max_i);
-		int max = max_g > max_i ? max_g : max_i;
-		
-		genuine_total.draw(image.width, 0, 640, 480, max_g);
-		impostor_total.draw(image.width,0, 640, 480, max_i);
-	} else {
-		int max_g, max_i;
-		genuine.getMaxMinCount(&max_g);
-		impostor.getMaxMinCount(&max_i);
-		int max = max_g > max_i ? max_g : max_i;
 
-		genuine.draw(image.width, 0, 640, 480, max_g);
-		impostor.draw(image.width,0, 640, 480, max_i);
+	if(isGenuineFirst)
+	{
+		current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
+		current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
+	} else {
+		current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
+		current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
 	}
+
 	ofPopStyle();
 	ofPopMatrix();
 
@@ -224,8 +227,11 @@ void testApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void testApp::mousePressed(int x, int y, int button){
-	if(gui->isVisible())
+	if(gui->isVisible()){
+		if( x < _GUI_WIDTH)
+			return;
 		x -= _GUI_WIDTH;
+	}
 
 	float min_distance = 100000000000000;
 	int min_index = 0;
@@ -251,9 +257,22 @@ void testApp::mousePressed(int x, int y, int button){
 		// GUI에 반영
 		ofxUISlider *slider = (ofxUISlider *) gui->getWidget("Score Rank");
 		slider->setValue(selectedKeypointRank);
+
+		// current histogram 설정
+		current_genuine = &genuine;
+		current_impostor = &impostor;
 	}
 	else
+	{
 		selectedKeypointIndex = NOT_KEYPOINT;
+
+		// current histogram 설정
+		current_genuine = &genuine_total;
+		current_impostor = &impostor_total;
+
+		setNormalizationValues();
+
+	}
 }
 
 //--------------------------------------------------------------
@@ -334,6 +353,12 @@ void testApp::drawGUI()
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	//------------------------------
 	gui->addSlider("Score Rank", 0, keypoints.size()-1, selectedKeypointRank, _GUI_WIDTH - iMargin, dim);
+	//gui->addSlider("Normalize Genuine", 0, normalizeValue_genuine*2, normalizeValue_genuine, _GUI_WIDTH - iMargin, dim);
+	//gui->addSlider("Normalize Impostor", 0, normalizeValue_Impostor*2,  normalizeValue_Impostor, _GUI_WIDTH - iMargin, dim);
+	gui->addToggle( "Genuine First", false, dim, dim);
+	gui->addTextInput("Normalize Genuine", "Normalize Genuine", length-xInit);
+	gui->addTextInput("Normalize Impostor", "Normalize Impostor", length-xInit);
+	gui->addToggle( "Fix Normalization Value", false, dim, dim);
 
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
 }
@@ -342,11 +367,30 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 	string name = e.widget->getName();
 	int kind = e.widget->getKind();
 
-	ofxUISlider *slider = (ofxUISlider *) e.widget; 
-	selectedKeypointRank = (int)(slider->getScaledValue()) ;
-	selectedKeypointIndex = sortedIndexList[ selectedKeypointRank  ]; 
-	//cout << "gui: " << selectedKeypointRank << "th\t" << selectedKeypointIndex << endl;
-	processed = false;
+	if( name == "Score Rank")
+	{
+		ofxUISlider *slider = (ofxUISlider *) e.widget; 
+		selectedKeypointRank = (int)(slider->getScaledValue()) ;
+		selectedKeypointIndex = sortedIndexList[ selectedKeypointRank  ]; 
+		//cout << "gui: " << selectedKeypointRank << "th\t" << selectedKeypointIndex << endl;
+		processed = false;
+	}
+	else if( name == "Normalize Genuine" )
+	{
+		ofxUITextInput *textinput = (ofxUITextInput *) e.widget; 
+		if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_ENTER)
+			normalizeValue_genuine = ofToFloat(textinput->getTextString());
+	}
+	else if( name == "Normalize Impostor" )
+	{
+		ofxUITextInput *textinput = (ofxUITextInput *) e.widget; 
+		if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_ENTER)
+			normalizeValue_Impostor = ofToFloat(textinput->getTextString());
+	}
+	else if( name == "Genuine First" )
+		isGenuineFirst = !isGenuineFirst;
+	else if( name == "Fix Normalization Value" )
+		isFixedNormalization = !isFixedNormalization;
 }
 
 // 각 score에 의하여 정렬된 index 리스트를 읽음
@@ -379,4 +423,18 @@ void testApp::loadSortedIndexList( int whole_file_index )
 
 	// Score가 큰게 좋으므로 Reverse!
 	std::reverse(sortedIndexList.begin(),sortedIndexList.end());
+}
+
+void testApp::setNormalizationValues()
+{
+	if(isFixedNormalization)
+		return;
+
+	normalizeValue_genuine = current_genuine->getMaxCount();
+	normalizeValue_Impostor = current_impostor->getMaxCount();
+
+	ofxUITextInput *textinput = (ofxUITextInput *)gui->getWidget("Normalize Genuine");
+	textinput->setTextString(ofToString((int)normalizeValue_genuine));
+	textinput = (ofxUITextInput *)gui->getWidget("Normalize Impostor");
+	textinput->setTextString(ofToString((int)normalizeValue_Impostor));
 }

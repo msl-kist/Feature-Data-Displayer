@@ -159,6 +159,20 @@ public:
 
 		return *max;
 	}
+	// 최대 개수 반환
+	//--------------------------------------------------------------
+	int getMaxCount()
+	{
+		int max = -1;
+
+		for(iterator = data.begin() ; iterator != data.end(); ++iterator)
+		{
+			if(iterator->second > max)
+				max = iterator->second;
+		}
+
+		return max;
+	}
 
 	// 중간에 빈(또는 생략된) bin을 추가함
 	//--------------------------------------------------------------
