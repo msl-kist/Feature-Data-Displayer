@@ -13,17 +13,22 @@ using namespace std;
 #include "ofxUI.h"
 
 #include "ofxHistogram/ofxHistogram.h"
+#include "ofxHistogram/ofxHistogramROC.h"
+#include "ROC_Calc.h"
+
 
 #define MOUSE_THRESHOLD 10
 
 #define NOT_KEYPOINT -1
+
+enum TYPE { GENUINE, IMPOSTOR };
 
 class testApp : public ofBaseApp{
 
 	public:
 		void setup();
 
-		void loadFile( char * name, ofxHistogram * distribution );
+		void loadFile( char * name, ofxHistogram * distribution, TYPE mode );
 
 		void update();
 		void draw();
@@ -74,4 +79,9 @@ class testApp : public ofBaseApp{
 
 		bool isGenuineFirst;
 		bool isFixedNormalization;
+
+		ROC_Calc ROC;
+		ofxHistogramROC ROC_curve;
+		double EER_Candidate, EER;
+		int EER_bin;
 };

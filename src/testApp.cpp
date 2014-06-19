@@ -25,13 +25,14 @@ void testApp::setup(){
 	whole_file_index = 0;
 
 	char name[100];
+	ROC.init();
 
 	sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
-	loadFile(name, &genuine_total);
+	loadFile(name, &genuine_total, GENUINE);
 	genuine_total.setColor(ofColor::green);
 
 	sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
-	loadFile(name, &impostor_total);
+	loadFile(name, &impostor_total, IMPOSTOR);
 	impostor_total.setColor(ofColor::red);
 
 	current_genuine = &genuine_total;
@@ -45,6 +46,27 @@ void testApp::setup(){
 
 	// GUI의 normalization value를 지정
 	setNormalizationValues();
+
+	
+	ROC.update();
+
+	EER = 1;
+	ROC_curve.clear();
+	for(int i = 0; i < ROC.i; i++)
+	{
+		ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
+		
+		EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
+		if(EER > EER_Candidate)
+		{
+			EER = EER_Candidate;
+			EER_bin = i;
+		}
+	}
+	ROC_curve.resize(0, ROC.Specificity.size());
+	ROC_curve.setColor(ofColor(255, 255, 0, 100));
+
+
 }
 
 //--------------------------------------------------------------
@@ -54,14 +76,16 @@ void testApp::update(){
 		genuine.clear();
 		impostor.clear();
 
+		ROC_curve.clear();
+
 		char name[100];
 
 		sprintf(name, "data/genuine/2_%d",selectedKeypointIndex);
-		loadFile(name, &genuine);
+		loadFile(name, &genuine, GENUINE);
 		genuine.setColor(ofColor::green);
 
 		sprintf(name, "data/impostor/3_%d", selectedKeypointIndex);
-		loadFile(name, &impostor);
+		loadFile(name, &impostor, IMPOSTOR);
 		impostor.setColor(ofColor::red);
 
 		// GUI의 normalization value를 저장
@@ -119,11 +143,17 @@ void testApp::draw(){
 	{
 		current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
 		current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
+		
+		ROC_curve.draw(image.width, 500, 500, 480, EER_bin);
+
 	} else {
+
 		current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
 		current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
 	}
-
+	if(selectedKeypointIndex == NOT_KEYPOINT)
+		ROC_curve.draw(image.width, 500, 500, 480, EER_bin);
+	
 	ofPopStyle();
 	ofPopMatrix();
 
@@ -133,6 +163,8 @@ void testApp::draw(){
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
+	
+	ROC.init();
 	if(key == ' ')
 	{
 		char name[100];
@@ -140,14 +172,33 @@ void testApp::keyPressed(int key){
 		whole_file_index = (whole_file_index + 1) % 3;
 
 		sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
-		loadFile(name, &genuine_total);
+		loadFile(name, &genuine_total, GENUINE);
 		genuine_total.setColor(ofColor::green);
 
 		sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
-		loadFile(name, &impostor_total);
+		loadFile(name, &impostor_total, IMPOSTOR);
 		impostor_total.setColor(ofColor::red);
 
 		loadSortedIndexList(whole_file_index);
+
+		//ROC curve
+		ROC.update();
+
+		ROC_curve.clear();
+		EER = 1;
+		for(int i = 0; i < ROC.i; i++)
+		{
+			ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
+		
+			EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
+			if(EER > EER_Candidate)
+			{
+				EER = EER_Candidate;
+				EER_bin = i;
+			}
+		}
+		ROC_curve.resize(0, ROC.Specificity.size());
+		ROC_curve.setColor(ofColor(255, 255, 0, 100));
 	}
 	if(key == 'b')
 		gui->toggleVisible();
@@ -266,12 +317,28 @@ void testApp::mousePressed(int x, int y, int button){
 	{
 		selectedKeypointIndex = NOT_KEYPOINT;
 
+
+		EER = 1;
+
+		//ROC curve
+		for(int i = 0; i < ROC.i; i++)
+		{
+			ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
+			
+			EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
+			if(EER > EER_Candidate)
+			{
+				EER = EER_Candidate;
+				EER_bin = i;
+			}
+		}
+		ROC_curve.resize(0, ROC.Specificity.size());
+
 		// current histogram 설정
 		current_genuine = &genuine_total;
 		current_impostor = &impostor_total;
 
 		setNormalizationValues();
-
 	}
 }
 
@@ -295,7 +362,8 @@ void testApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
-void testApp::loadFile( char * name, ofxHistogram * distribution )
+
+void testApp::loadFile( char * name, ofxHistogram * distribution, TYPE mode)
 {
 	FILE *file;
 	int distance, count; 
@@ -306,6 +374,12 @@ void testApp::loadFile( char * name, ofxHistogram * distribution )
 		fscanf(file,"%d %d\n",&distance,&count);
 
 		distribution->assign(distance, count);
+
+		if(mode == GENUINE) 
+			ROC.Genuine.push_back(std::make_pair(distance, count));
+		else 
+			ROC.Imposter.push_back(std::make_pair(distance, count));	
+
 		if(feof(file)){
 			break;
 		}

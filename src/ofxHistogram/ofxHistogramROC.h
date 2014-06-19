@@ -1,24 +1,24 @@
 
-#ifndef OFXHISTOGRAM
-#define OFXHISTOGRAM
+#ifndef OFXHISTOGRAMROC
+#define OFXHISTOGRAMROC
 
 #include <map>
 #include <iostream>		// for ostream ( @operator<<())
 
 using namespace std;
 
-class ofxHistogram
+class ofxHistogramROC
 {
 public:
-	ofxHistogram() { init(0, 1000, 1); }
-	ofxHistogram(int min, int width) { init(min, -1, width);	}
-	ofxHistogram(int min, int max, int width) { init(min, max, width); }
+	ofxHistogramROC() { init(0, 1000, 1); }
+	ofxHistogramROC(double min, double width) { init(min, -1, width);	}
+	ofxHistogramROC(double min, double max, double width) { init(min, max, width); }
 	
 	// 주어진 값을 히스토그램에 추가
 	//--------------------------------------------------------------
-	void  add(int x)
+	void  add(double x)
 	{
-		int repValue = getRepresentativeValue(x);
+		double repValue = getRepresentativeValue(x);
 		iterator = data.find(repValue);
 		if(iterator == data.end())
 			data[repValue] = 1;
@@ -28,7 +28,7 @@ public:
 
 	// 주어진 값으로 히스토그램 할당
 	//--------------------------------------------------------------
-	int assign(int key, int value)
+	double assign(double key, double value)
 	{
 		iterator = data.find(key);
 		if(iterator == data.end())
@@ -40,33 +40,33 @@ public:
 
 	// cout으로 객체 출력
 	//--------------------------------------------------------------
-	friend ostream& operator<<(ostream& os, const ofxHistogram& hist)
+	friend ostream& operator<<(ostream& os, const ofxHistogramROC& hist)
 	{
 		os << "\tKEY\tCOUNT\n";
 		os << "================================\n";
 
-		for( map<int, int>::const_iterator iterator = hist.data.begin() ; iterator != hist.data.end(); ++iterator)
+		for( map<double, double>::const_iterator iterator = hist.data.begin() ; iterator != hist.data.end(); ++iterator)
 			os << "\t   " << iterator->first << "\t    " << iterator->second << "\n";
 
 		return os;
 	}
 
-	void draw(int x, int y, int width, float height)
+	void draw(double x, double y, double width, float height, int EER_bin)
 	{
-		int max = 0;
-		int min = 0;
+		double max = 0;
+		double min = 0;
 		getMaxMinCount(&max, &min);
-		int i = 0;
+		double i = 0;
 
 		// data의 key의 최대값
-		int maxBinSize = data.size();
+		double maxBinSize = data.size();
 
 		// 색상 채우기
 		if(data.size() != bin_color.size())
 		{
 			bin_color.resize(data.size());
 
-			for(int i=0; i<bin_color.size(); ++i)
+			for(double i=0; i<bin_color.size(); i++)
 			{
 				bin_color[i] = ofColor( ofRandom(255), ofRandom(255), ofRandom(255), ofRandom(255) );
 			}
@@ -79,10 +79,14 @@ public:
 			ofTranslate(x, height + y);
 			ofScale(width, -height, 1);
 		
-			for(iterator = data.begin() ; iterator != data.end(); ++iterator, ++i)
+			for(iterator = data.begin() ; iterator != data.end(); ++iterator, i++)
 			{
 				ofSetColor(bin_color[i]);
 				ofRect(i * 1.0 / maxBinSize, 0, 1.0 / maxBinSize, (float)(iterator->second) / (float)max);
+
+				ofSetColor(ofColor::red);
+				if(i == EER_bin)
+					ofCircle(ofPoint(i * 1.0 / maxBinSize , (float)(iterator->second) / (float)max ), 0.01);
 			}			
 			
 		ofPopStyle();
@@ -93,27 +97,26 @@ public:
 
 	// 주어진 max_count 크기로 정규화하여 출력
 	//--------------------------------------------------------------
-	void draw(int x, int y, int width, int height, int max_count)
+	void draw(double x, double y, double width, double height, double max_count)
 	{
-		int max = 0;
-		int min = 0;
+		double max = 0;
+		double min = 0;
 		getMaxMinCount(&max, &min);
-		int i = 0;
+		double i = 0;
 
 		// data의 key의 최대값
-		int maxBinSize = data.size();
+		double maxBinSize = data.size();
 
 		// 색상 채우기
 		if(data.size() != bin_color.size())
 		{
 			bin_color.resize(data.size());
 
-			for(int i=0; i<bin_color.size(); ++i)
+			for(double i=0; i<bin_color.size(); i++)
 			{
 				bin_color[i] = ofColor( ofRandom(255), ofRandom(255), ofRandom(255), ofRandom(255) );
 			}
 		}
-
 
 		ofPushMatrix();
 		ofPushStyle();
@@ -121,7 +124,7 @@ public:
 		ofTranslate(x, height + y);
 		ofScale(width, -((float)(height * max) / max_count), 1);
 
-		for(iterator = data.begin() ; iterator != data.end(); ++iterator, ++i)
+		for(iterator = data.begin() ; iterator != data.end(); ++iterator, i++)
 		{
 			ofSetColor(bin_color[i]);
 			ofRect(i * 1.0 / maxBinSize, 0, 1.0 / maxBinSize, 
@@ -140,17 +143,18 @@ public:
 		if(data.size() != bin_color.size())
 			bin_color.resize(data.size());
 		
-		for(int i=0; i<bin_color.size(); ++i)
+		for(double i=0; i<bin_color.size(); i++)
 			bin_color[i] = color;
 	}
 
 	// 최대/최소 개수 반환
 	//--------------------------------------------------------------
-	int getMaxMinCount(int * max, int * min = NULL)
+	
+	void getMaxMinCount(double * max, double * min = NULL)
 	{
 		*max = -1;
 		if(min != NULL)
-		*min = 10000000000;
+			*min = 10000000000;
 
 		for(iterator = data.begin() ; iterator != data.end(); ++iterator)
 		{
@@ -159,31 +163,13 @@ public:
 			if(min != NULL && iterator->second < *min)
 				*min = iterator->second;
 		}
-
-		return *max;
 	}
-	// 최대 개수 반환
-	//--------------------------------------------------------------
-	int getMaxCount()
-	{
-		int max = -1;
-
-		for(iterator = data.begin() ; iterator != data.end(); ++iterator)
-		{
-			if(iterator->second > max)
-				max = iterator->second;
-		}
-
-		return max;
-	}
-
-
 
 	// 중간에 빈(또는 생략된) bin을 추가함
 	//--------------------------------------------------------------
 	void normalize()
 	{
-		int prev_key;
+		double prev_key;
 
 		// iterator 2번째 노드로 세팅
 		iterator = data.begin();
@@ -192,8 +178,8 @@ public:
 
 		for(iterator = iterator ; iterator != data.end(); ++iterator)
 		{
-			int this_key = iterator->first;
-			for( int i=prev_key+width; i < this_key; i += width)
+			double this_key = iterator->first;
+			for( double i=prev_key+width; i < this_key; i += width)
 				data[i] = 0;
 			prev_key = this_key;
 		}
@@ -201,7 +187,7 @@ public:
 
 	// 최대/최소값 범위 수정
 	//--------------------------------------------------------------
-	void resize(int min, int max)
+	void resize(double min, double max)
 	{
 		this->min = min;
 		this->max = max;
@@ -211,7 +197,7 @@ public:
 		{
 			if(iterator->first > max)
 			{
-				map<int, int>::iterator toRemove = iterator;
+				map<double, double>::iterator toRemove = iterator;
 				iterator--;
 
 				data.erase(toRemove);
@@ -219,7 +205,7 @@ public:
 		}
 
 		// Min 값 미만 노드 제거
-		map<int, int>::reverse_iterator riterator;
+		map<double, double>::reverse_iterator riterator;
 
 		for(riterator = data.rbegin(); riterator != data.rend(); ++riterator)
 		{
@@ -234,17 +220,17 @@ public:
 
 protected:
 	// Histogram Parameters
-	int min;
-	int max;
-	int width;
+	double min;
+	double max;
+	double width;
 
 	// Histogram Data
-	map<int, int>	data;
-	map<int, int>::iterator	iterator;
+	map<double, double>	data;
+	map<double, double>::iterator	iterator;
 
 	//  초기화 함수
 	//--------------------------------------------------------------
-	void init(int min, int max, int width)
+	void init(double min, double max, double width)
 	{
 		this->min = min;
 		this->max = max;
@@ -253,7 +239,7 @@ protected:
 		// map형 초기화
 		if(max != -1)
 		{
-			for(int i=min; i<=max; i+=width)
+			for(double i=min; i<=max; i+=width)
 			{
 				data[i] = 0;
 			}
@@ -262,15 +248,11 @@ protected:
 
 	// 주어진 표본이 들어갈 적절한 bin을 선택
 	//--------------------------------------------------------------
-	int getRepresentativeValue(int x)
+	double getRepresentativeValue(double x)
 	{
-		int v = x - min;
+		double v = x - min;
 		return (v / width)*width + min;
 	}
-
-
-
-
 };
 
 #endif
