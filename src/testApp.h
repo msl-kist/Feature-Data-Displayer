@@ -2,6 +2,12 @@
 
 #include <stdio.h>
 
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxUI.h"
@@ -37,7 +43,9 @@ class testApp : public ofBaseApp{
 		ofImage image;
 
 		vector<cv::KeyPoint> keypoints;
+		vector<int>			sortedIndexList;
 
+		int selectedKeypointRank;
 		int selectedKeypointIndex;
 		bool processed;
 
@@ -54,4 +62,5 @@ class testApp : public ofBaseApp{
 
 		ofxUICanvas *gui; 
 		void guiEvent(ofxUIEventArgs &e);
+		void loadSortedIndexList( int whole_file_index );
 };

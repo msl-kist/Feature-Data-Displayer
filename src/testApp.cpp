@@ -17,6 +17,7 @@ void testApp::setup(){
 	loadKeyPoint();
 
 	selectedKeypointIndex = NOT_KEYPOINT;
+	selectedKeypointRank = 0;
 	processed = true;
 
 	whole_file_index = 0;
@@ -25,11 +26,13 @@ void testApp::setup(){
 
 	sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
 	loadFile(name, &genuine_total);
-	genuine_total.setColor(ofColor::red);
+	genuine_total.setColor(ofColor::green);
 
 	sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
 	loadFile(name, &impostor_total);
-	impostor_total.setColor(ofColor::green);
+	impostor_total.setColor(ofColor::red);
+
+	loadSortedIndexList(whole_file_index);
 
 	// GUI
 	//==============================================================
@@ -47,11 +50,11 @@ void testApp::update(){
 
 		sprintf(name, "data/genuine/2_%d",selectedKeypointIndex);
 		loadFile(name, &genuine);
-		genuine.setColor(ofColor(200, 50, 50, 100));
+		genuine.setColor(ofColor::green);
 
 		sprintf(name, "data/impostor/3_%d", selectedKeypointIndex);
 		loadFile(name, &impostor);
-		impostor.setColor(ofColor(50, 200, 50, 0));
+		impostor.setColor(ofColor::red);
 
 		processed = true;
 	}
@@ -73,11 +76,15 @@ void testApp::draw(){
 	ofPushStyle();
 	for(int i=0; i<keypoints.size();++i)
 	{
-		if(i == selectedKeypointIndex)
-			ofSetColor(ofColor::lightYellow);
-		else
-			ofSetColor(ofColor::green);
+		ofSetColor(ofColor::green);
 		ofCircle(ofPoint(keypoints[i].pt.x, keypoints[i].pt.y), 3);
+	}
+
+	// 선택된 점 출력
+	if(selectedKeypointIndex != NOT_KEYPOINT)
+	{
+		ofSetColor(ofColor::red);
+		ofCircle(ofPoint(keypoints[selectedKeypointIndex].pt.x, keypoints[selectedKeypointIndex].pt.y), 5);
 	}
 
 	//ofNoFill();
@@ -131,16 +138,73 @@ void testApp::keyPressed(int key){
 
 		sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
 		loadFile(name, &genuine_total);
-		genuine_total.setColor(ofColor::red);
+		genuine_total.setColor(ofColor::green);
 
 		sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
 		loadFile(name, &impostor_total);
-		impostor_total.setColor(ofColor::green);
+		impostor_total.setColor(ofColor::red);
+
+		loadSortedIndexList(whole_file_index);
 	}
 	if(key == 'b')
 		gui->toggleVisible();
 	if(key == 'f')
 		ofToggleFullscreen();
+
+	if(key == OF_KEY_UP)
+	{
+		if(selectedKeypointRank > 0)
+			selectedKeypointRank--;
+		selectedKeypointIndex = sortedIndexList[ selectedKeypointRank ];
+
+		processed = false;
+
+		// GUI에 반영
+		ofxUISlider *slider = (ofxUISlider *) gui->getWidget("Score Rank");
+		slider->setValue(selectedKeypointRank);
+	}
+	if(key == OF_KEY_DOWN)
+	{
+		if(selectedKeypointRank < keypoints.size()-1)
+			selectedKeypointRank++;
+		selectedKeypointIndex = sortedIndexList[ selectedKeypointRank ];
+
+		processed = false;
+
+		// GUI에 반영
+		ofxUISlider *slider = (ofxUISlider *) gui->getWidget("Score Rank");
+		slider->setValue(selectedKeypointRank);
+	}
+
+	if(key == OF_KEY_PAGE_UP)
+	{
+		if(selectedKeypointRank > 10)
+			selectedKeypointRank -= 10;
+		else 
+			selectedKeypointRank = 0;
+
+		selectedKeypointIndex = sortedIndexList[ selectedKeypointRank ];
+
+		processed = false;
+
+		// GUI에 반영
+		ofxUISlider *slider = (ofxUISlider *) gui->getWidget("Score Rank");
+		slider->setValue(selectedKeypointRank);
+	}
+	if(key == OF_KEY_PAGE_DOWN)
+	{
+		if(selectedKeypointRank < keypoints.size()-11)
+			selectedKeypointRank += 10;
+		else
+			selectedKeypointRank = keypoints.size()-1;
+		selectedKeypointIndex = sortedIndexList[ selectedKeypointRank ];
+
+		processed = false;
+
+		// GUI에 반영
+		ofxUISlider *slider = (ofxUISlider *) gui->getWidget("Score Rank");
+		slider->setValue(selectedKeypointRank);
+	}
 }
 
 //--------------------------------------------------------------
@@ -160,6 +224,9 @@ void testApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void testApp::mousePressed(int x, int y, int button){
+	if(gui->isVisible())
+		x -= _GUI_WIDTH;
+
 	float min_distance = 100000000000000;
 	int min_index = 0;
 	for(int i=0; i<keypoints.size(); ++i)
@@ -175,6 +242,15 @@ void testApp::mousePressed(int x, int y, int button){
 	if(min_distance <= MOUSE_THRESHOLD){
 		selectedKeypointIndex = min_index;
 		processed = false;
+
+		vector<int>::iterator iter = find(sortedIndexList.begin(), sortedIndexList.end(), selectedKeypointIndex);
+		selectedKeypointRank = (int)(iter - sortedIndexList.begin());
+
+		//cout << "space: " << selectedKeypointRank << "th\t" << selectedKeypointIndex << endl;
+		
+		// GUI에 반영
+		ofxUISlider *slider = (ofxUISlider *) gui->getWidget("Score Rank");
+		slider->setValue(selectedKeypointRank);
 	}
 	else
 		selectedKeypointIndex = NOT_KEYPOINT;
@@ -257,13 +333,50 @@ void testApp::drawGUI()
 	gui->addWidgetDown(new ofxUILabel("[F]: Full screen on/off", OFX_UI_FONT_SMALL));
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	//------------------------------
-	float tt = 0;
-	gui->addSlider("CONTRAST", 1, 255, tt, _GUI_WIDTH - iMargin, dim);
-	//gui->addSlider("8", 0.0, 255.0, 150, dim*3, 350);
+	gui->addSlider("Score Rank", 0, keypoints.size()-1, selectedKeypointRank, _GUI_WIDTH - iMargin, dim);
 
+	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
+}
+void testApp::guiEvent(ofxUIEventArgs &e)
+{
+	string name = e.widget->getName();
+	int kind = e.widget->getKind();
 
-	//gui->setWidgetPosition(OFX_UI_WIDGET_POSITION_RIGHT);
-	//gui->addSlider("CONTRAST", 1, 10, fContrast, _GUI_WIDTH - iMargin, dim);
-	//gui->addLabelButton("TRAIN", false, _GUI_WIDTH - iMargin, 0);
-	//gui->addSpacer(_GUI_WIDTH-iMargin, 1);
+	ofxUISlider *slider = (ofxUISlider *) e.widget; 
+	selectedKeypointRank = (int)(slider->getScaledValue()) ;
+	selectedKeypointIndex = sortedIndexList[ selectedKeypointRank  ]; 
+	//cout << "gui: " << selectedKeypointRank << "th\t" << selectedKeypointIndex << endl;
+	processed = false;
+}
+
+// 각 score에 의하여 정렬된 index 리스트를 읽음
+//--------------------------------------------------------------
+void testApp::loadSortedIndexList( int whole_file_index )
+{
+	char name[100];
+	sprintf(name, "data/%sindex.txt",whole_files[whole_file_index]);
+
+	FILE *file;
+	int index;
+
+	file = fopen(name,"r");
+
+	if(file == NULL)
+		cerr << "SORTED FILE NOT FOUND" << endl;
+
+	sortedIndexList.clear();
+
+	while(true){
+		fscanf(file,"%d \n",&index);
+
+		sortedIndexList.push_back(index);
+
+		if(feof(file)){
+			break;
+		}
+	}
+	fclose(file);
+
+	// Score가 큰게 좋으므로 Reverse!
+	std::reverse(sortedIndexList.begin(),sortedIndexList.end());
 }
