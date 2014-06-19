@@ -143,7 +143,7 @@ public:
 
 	// 최대/최소 개수 반환
 	//--------------------------------------------------------------
-	void getMaxMinCount(int * max, int * min = NULL)
+	int getMaxMinCount(int * max, int * min = NULL)
 	{
 		*max = -1;
 		if(min != NULL)
@@ -156,6 +156,8 @@ public:
 			if(min != NULL && iterator->second < *min)
 				*min = iterator->second;
 		}
+
+		return *max;
 	}
 
 	// 중간에 빈(또는 생략된) bin을 추가함
