@@ -47,24 +47,9 @@ void testApp::setup(){
 	// GUI의 normalization value를 지정
 	setNormalizationValues();
 
-	
 	ROC.update();
+	calculateROC();
 
-	EER = 1;
-	ROC_curve.clear();
-	for(int i = 0; i < ROC.i; i++)
-	{
-		ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
-		
-		EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
-		if(EER > EER_Candidate)
-		{
-			EER = EER_Candidate;
-			EER_bin = i;
-		}
-	}
-	ROC_curve.resize(0, ROC.Specificity.size());
-	ROC_curve.setColor(ofColor(255, 255, 0, 100));
 
 
 }
@@ -164,9 +149,10 @@ void testApp::draw(){
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
 	
-	ROC.init();
 	if(key == ' ')
 	{
+		ROC.init();
+
 		char name[100];
 
 		whole_file_index = (whole_file_index + 1) % 3;
@@ -180,25 +166,9 @@ void testApp::keyPressed(int key){
 		impostor_total.setColor(ofColor::red);
 
 		loadSortedIndexList(whole_file_index);
-
-		//ROC curve
-		ROC.update();
-
-		ROC_curve.clear();
-		EER = 1;
-		for(int i = 0; i < ROC.i; i++)
-		{
-			ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
 		
-			EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
-			if(EER > EER_Candidate)
-			{
-				EER = EER_Candidate;
-				EER_bin = i;
-			}
-		}
-		ROC_curve.resize(0, ROC.Specificity.size());
-		ROC_curve.setColor(ofColor(255, 255, 0, 100));
+		ROC.update();
+		calculateROC();
 	}
 	if(key == 'b')
 		gui->toggleVisible();
@@ -317,22 +287,8 @@ void testApp::mousePressed(int x, int y, int button){
 	{
 		selectedKeypointIndex = NOT_KEYPOINT;
 
-
-		EER = 1;
-
-		//ROC curve
-		for(int i = 0; i < ROC.i; i++)
-		{
-			ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
-			
-			EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
-			if(EER > EER_Candidate)
-			{
-				EER = EER_Candidate;
-				EER_bin = i;
-			}
-		}
-		ROC_curve.resize(0, ROC.Specificity.size());
+		// ROC 재계산
+		calculateROC();
 
 		// current histogram 설정
 		current_genuine = &genuine_total;
@@ -511,4 +467,23 @@ void testApp::setNormalizationValues()
 	textinput->setTextString(ofToString((int)normalizeValue_genuine));
 	textinput = (ofxUITextInput *)gui->getWidget("Normalize Impostor");
 	textinput->setTextString(ofToString((int)normalizeValue_Impostor));
+}
+
+void testApp::calculateROC()
+{
+	EER = 1;
+	ROC_curve.clear();
+	for(int i = 0; i < ROC.i; i++)
+	{
+		ROC_curve.assign(ROC.Specificity[i], ROC.Sensitivity[i]);
+
+		EER_Candidate = abs((ROC.Specificity[i] + ROC.Sensitivity[i]) - 1);
+		if(EER > EER_Candidate)
+		{
+			EER = EER_Candidate;
+			EER_bin = i;
+		}
+	}
+	ROC_curve.resize(0, ROC.Specificity.size());
+	ROC_curve.setColor(ofColor(255, 255, 0, 100));
 }

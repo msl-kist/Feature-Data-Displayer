@@ -28,6 +28,8 @@ class testApp : public ofBaseApp{
 	public:
 		void setup();
 
+		void calculateROC();
+
 		void loadFile( char * name, ofxHistogram * distribution, TYPE mode );
 
 		void update();
