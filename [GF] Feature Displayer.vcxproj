@@ -127,6 +127,7 @@
     <ClCompile Include="..\..\..\addons\ofxXmlSettings\libs\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ofxHistogram\ofxGaussianHistogram.h" />
     <ClInclude Include="src\ofxHistogram\ofxHistogram.h" />
     <ClInclude Include="src\ofxHistogram\ofxHistogramROC.h" />
     <ClInclude Include="src\ROC_Calc.h" />

@@ -944,5 +944,10 @@
     <ClInclude Include="src\ofxHistogram\ofxHistogram.h">
       <Filter>src\ofxHistogram</Filter>
     </ClInclude>
+    <ClInclude Include="src\ofxHistogram\ofxHistogramROC.h" />
+    <ClInclude Include="src\ROC_Calc.h" />
+    <ClInclude Include="src\ofxHistogram\ofxGaussianHistogram.h">
+      <Filter>src\ofxHistogram</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

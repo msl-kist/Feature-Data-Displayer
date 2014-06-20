@@ -13,6 +13,7 @@ using namespace std;
 #include "ofxUI.h"
 
 #include "ofxHistogram/ofxHistogram.h"
+#include "ofxHistogram/ofxGaussianHistogram.h"
 #include "ofxHistogram/ofxHistogramROC.h"
 #include "ROC_Calc.h"
 
@@ -59,16 +60,16 @@ class testApp : public ofBaseApp{
 		int selectedKeypointIndex;
 		bool processed;
 
-		ofxHistogram genuine;
-		ofxHistogram impostor;
+		ofxGaussianHistogram genuine;
+		ofxGaussianHistogram impostor;
 
 		int whole_file_index;
 
-		ofxHistogram genuine_total;
-		ofxHistogram impostor_total;
+		ofxGaussianHistogram genuine_total;
+		ofxGaussianHistogram impostor_total;
 
-		ofxHistogram * current_genuine;
-		ofxHistogram * current_impostor;
+		ofxGaussianHistogram * current_genuine;
+		ofxGaussianHistogram * current_impostor;
 
 		ofTrueTypeFont verdana;
 
@@ -81,6 +82,7 @@ class testApp : public ofBaseApp{
 
 		bool isGenuineFirst;
 		bool isFixedNormalization;
+		bool isGaussianMode;
 
 		ROC_Calc ROC;
 		ofxHistogramROC ROC_curve;

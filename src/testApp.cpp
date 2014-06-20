@@ -21,6 +21,7 @@ void testApp::setup(){
 	processed = true;
 	isGenuineFirst = false;
 	isFixedNormalization = false;
+	isGaussianMode = false;
 
 	whole_file_index = 0;
 
@@ -124,18 +125,32 @@ void testApp::draw(){
 	ofPushStyle();
 	ofSetColor(ofColor::white);
 
-	if(isGenuineFirst)
-	{
-		current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
-		current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
-		
-		ROC_curve.draw(image.width, 500, 500, 480, EER_bin);
-
-	} else {
-
-		current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
-		current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
+	if(!isGaussianMode)		// 일반 Histogram 모드
+	{	
+		if(isGenuineFirst)
+		{
+			current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
+			current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
+		} else {
+			current_genuine->draw(image.width, 0, 640, 480, normalizeValue_genuine);
+			current_impostor->draw(image.width, 0, 640, 480, normalizeValue_Impostor);
+		}
+	} else {				// Gaussian Distribution
+		if(isGenuineFirst)
+		{
+			current_impostor->drawGaussian(image.width, 0, 640, 480, normalizeValue_Impostor);
+			current_genuine->drawGaussian(image.width, 0, 640, 480, normalizeValue_genuine);
+		} else {
+			current_genuine->drawGaussian(image.width, 0, 640, 480, normalizeValue_genuine);
+			current_impostor->drawGaussian(image.width, 0, 640, 480, normalizeValue_Impostor);
+		}
+		string str = "[Genuine] mean: " + ofToString(current_genuine->mean) + "     stdev: " + ofToString(current_genuine->variance);
+		ofDrawBitmapString(str, image.width + 10, 20);
+		str = "[Impostor] mean: " + ofToString(current_impostor->mean) + "     stdev: " + ofToString(current_impostor->variance);
+		ofDrawBitmapString(str, image.width + 10, 40);
 	}
+	ROC_curve.draw(image.width, 500, 500, 480, EER_bin);
+
 	if(selectedKeypointIndex == NOT_KEYPOINT)
 		ROC_curve.draw(image.width, 500, 500, 480, EER_bin);
 	
@@ -169,6 +184,12 @@ void testApp::keyPressed(int key){
 		
 		ROC.update();
 		calculateROC();
+
+		// GUI 수정
+		ofxUILabel *label = (ofxUILabel *)gui->getWidget("Metric");
+		label->setLabel(whole_files[whole_file_index]);
+
+		setNormalizationValues();
 	}
 	if(key == 'b')
 		gui->toggleVisible();
@@ -389,6 +410,10 @@ void testApp::drawGUI()
 	gui->addTextInput("Normalize Genuine", "Normalize Genuine", length-xInit);
 	gui->addTextInput("Normalize Impostor", "Normalize Impostor", length-xInit);
 	gui->addToggle( "Fix Normalization Value", false, dim, dim);
+	gui->addToggle( "Gaussian Mode", false, dim, dim);
+	gui->addSpacer(_GUI_WIDTH-iMargin, 4);
+	//------------------------------
+	gui->addLabel("Metric", whole_files[whole_file_index]);
 
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
 }
@@ -421,6 +446,17 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 		isGenuineFirst = !isGenuineFirst;
 	else if( name == "Fix Normalization Value" )
 		isFixedNormalization = !isFixedNormalization;
+	else if( name == "Gaussian Mode" ){
+		isGaussianMode = !isGaussianMode;
+
+		ofxUITextInput *text = (ofxUITextInput *)gui->getWidget("Normalize Genuine");
+		text->setTextString(ofToString(1.0));
+		text = (ofxUITextInput *)gui->getWidget("Normalize Impostor");
+		text->setTextString(ofToString(1.0));
+
+		normalizeValue_genuine = 1.0;
+		normalizeValue_Impostor = 1.0;
+	}
 }
 
 // 각 score에 의하여 정렬된 index 리스트를 읽음
@@ -460,13 +496,26 @@ void testApp::setNormalizationValues()
 	if(isFixedNormalization)
 		return;
 
-	normalizeValue_genuine = current_genuine->getMaxCount();
-	normalizeValue_Impostor = current_impostor->getMaxCount();
+	if(isGaussianMode)
+	{
+		normalizeValue_genuine = 1.0;
+		normalizeValue_Impostor = 1.0;
 
-	ofxUITextInput *textinput = (ofxUITextInput *)gui->getWidget("Normalize Genuine");
-	textinput->setTextString(ofToString((int)normalizeValue_genuine));
-	textinput = (ofxUITextInput *)gui->getWidget("Normalize Impostor");
-	textinput->setTextString(ofToString((int)normalizeValue_Impostor));
+		ofxUITextInput *textinput = (ofxUITextInput *)gui->getWidget("Normalize Genuine");
+		textinput->setTextString(ofToString(normalizeValue_genuine));
+		textinput = (ofxUITextInput *)gui->getWidget("Normalize Impostor");
+		textinput->setTextString(ofToString(normalizeValue_Impostor));
+	} else
+	{
+		normalizeValue_genuine = current_genuine->getMaxCount();
+		normalizeValue_Impostor = current_impostor->getMaxCount();
+
+		ofxUITextInput *textinput = (ofxUITextInput *)gui->getWidget("Normalize Genuine");
+		textinput->setTextString(ofToString((int)normalizeValue_genuine));
+		textinput = (ofxUITextInput *)gui->getWidget("Normalize Impostor");
+		textinput->setTextString(ofToString((int)normalizeValue_Impostor));
+	}
+
 }
 
 void testApp::calculateROC()
