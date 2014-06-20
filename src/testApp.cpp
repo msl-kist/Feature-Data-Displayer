@@ -181,6 +181,9 @@ void testApp::keyPressed(int key){
 		impostor_total.setColor(ofColor::red);
 
 		loadSortedIndexList(whole_file_index);
+
+		current_impostor = &impostor_total;
+		current_genuine = &genuine_total;
 		
 		ROC.update();
 		calculateROC();
@@ -316,6 +319,9 @@ void testApp::mousePressed(int x, int y, int button){
 		current_impostor = &impostor_total;
 
 		setNormalizationValues();
+
+		ofxUILabel* l = (ofxUILabel*) gui->getWidget("EER_Value");
+		l->setLabel(ofToString(EER));
 	}
 }
 
@@ -415,7 +421,14 @@ void testApp::drawGUI()
 	//------------------------------
 	gui->addLabel("Metric", whole_files[whole_file_index]);
 
+	gui->addSpacer(_GUI_WIDTH-10, 2);
+	gui->addWidgetDown(new ofxUILabel(" ", OFX_UI_FONT_SMALL));
+	gui->addWidgetDown(new ofxUILabel("EER value", OFX_UI_FONT_MEDIUM));
+	gui->addWidgetDown(new ofxUILabel("EER_Value", OFX_UI_FONT_MEDIUM));
+
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
+
+	
 }
 void testApp::guiEvent(ofxUIEventArgs &e)
 {
@@ -449,13 +462,7 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 	else if( name == "Gaussian Mode" ){
 		isGaussianMode = !isGaussianMode;
 
-		ofxUITextInput *text = (ofxUITextInput *)gui->getWidget("Normalize Genuine");
-		text->setTextString(ofToString(1.0));
-		text = (ofxUITextInput *)gui->getWidget("Normalize Impostor");
-		text->setTextString(ofToString(1.0));
-
-		normalizeValue_genuine = 1.0;
-		normalizeValue_Impostor = 1.0;
+		setNormalizationValues();
 	}
 }
 
@@ -535,4 +542,9 @@ void testApp::calculateROC()
 	}
 	ROC_curve.resize(0, ROC.Specificity.size());
 	ROC_curve.setColor(ofColor(255, 255, 0, 100));
+
+	//GUI¿¡ ¹Ý¿µ
+	ofxUILabel* l;
+	l = (ofxUILabel*) gui->getWidget("EER_Value");
+	l->setLabel(ofToString(EER));
 }
