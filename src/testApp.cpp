@@ -390,7 +390,14 @@ void testApp::drawGUI()
 	gui->addTextInput("Normalize Impostor", "Normalize Impostor", length-xInit);
 	gui->addToggle( "Fix Normalization Value", false, dim, dim);
 
+	gui->addSpacer(_GUI_WIDTH-10, 2);
+	gui->addWidgetDown(new ofxUILabel(" ", OFX_UI_FONT_SMALL));
+	gui->addWidgetDown(new ofxUILabel("EER value", OFX_UI_FONT_MEDIUM));
+	gui->addWidgetDown(new ofxUILabel("EER_Value", OFX_UI_FONT_MEDIUM));
+
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
+
+	
 }
 void testApp::guiEvent(ofxUIEventArgs &e)
 {
@@ -421,6 +428,15 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 		isGenuineFirst = !isGenuineFirst;
 	else if( name == "Fix Normalization Value" )
 		isFixedNormalization = !isFixedNormalization;
+
+	else if( name == "Genuine First" )
+	{
+		ofxUILabel* l;
+		l = (ofxUILabel*) gui->getWidget("EER_Value");
+		l->setLabel(ofToString(EER));
+	}
+	
+	
 }
 
 // 각 score에 의하여 정렬된 index 리스트를 읽음
@@ -486,4 +502,9 @@ void testApp::calculateROC()
 	}
 	ROC_curve.resize(0, ROC.Specificity.size());
 	ROC_curve.setColor(ofColor(255, 255, 0, 100));
+
+	//GUI에 반영
+	ofxUILabel* l;
+	l = (ofxUILabel*) gui->getWidget("EER_Value");
+	l->setLabel(ofToString(EER));
 }
