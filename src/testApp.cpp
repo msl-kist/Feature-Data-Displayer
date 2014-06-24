@@ -77,10 +77,6 @@ void testApp::update(){
 		// GUI의 normalization value를 저장
 		setNormalizationValues();
 
-		// GUI의 Score value를 저장
-		ofxUILabel * label = (ofxUILabel*)gui->getWidget("Score");
-		label->setLabel( ofToString( sortedScoreList[selectedKeypointRank] ));
-
 		processed = true;
 	}
 }
@@ -414,25 +410,22 @@ void testApp::drawGUI()
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	//------------------------------
 	gui->addSlider("Score Rank", 0, keypoints.size()-1, selectedKeypointRank, _GUI_WIDTH - iMargin, dim);
-	//------------------------------
-	gui->addWidgetDown(new ofxUILabel("Score Value", OFX_UI_FONT_MEDIUM));
-	gui->addWidgetDown(new ofxUILabel("Score", OFX_UI_FONT_SMALL));
-
-	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
+	//gui->addSlider("Normalize Genuine", 0, normalizeValue_genuine*2, normalizeValue_genuine, _GUI_WIDTH - iMargin, dim);
+	//gui->addSlider("Normalize Impostor", 0, normalizeValue_Impostor*2,  normalizeValue_Impostor, _GUI_WIDTH - iMargin, dim);
 	gui->addToggle( "Genuine First", false, dim, dim);
-	gui->addToggle( "Gaussian Mode", false, dim, dim);
 	gui->addTextInput("Normalize Genuine", "Normalize Genuine", length-xInit);
 	gui->addTextInput("Normalize Impostor", "Normalize Impostor", length-xInit);
 	gui->addToggle( "Fix Normalization Value", false, dim, dim);
-	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
+	gui->addToggle( "Gaussian Mode", false, dim, dim);
+	gui->addSpacer(_GUI_WIDTH-iMargin, 4);
 	//------------------------------
 	gui->addLabel("Metric", whole_files[whole_file_index]);
 
-	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
+	gui->addSpacer(_GUI_WIDTH-10, 2);
 	gui->addWidgetDown(new ofxUILabel(" ", OFX_UI_FONT_SMALL));
 	gui->addWidgetDown(new ofxUILabel("EER value", OFX_UI_FONT_MEDIUM));
-	gui->addWidgetDown(new ofxUILabel("EER_Value", OFX_UI_FONT_SMALL));
-	
+	gui->addWidgetDown(new ofxUILabel("EER_Value", OFX_UI_FONT_MEDIUM));
+
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
 
 	
@@ -503,29 +496,6 @@ void testApp::loadSortedIndexList( int whole_file_index )
 
 	// Score가 큰게 좋으므로 Reverse!
 	std::reverse(sortedIndexList.begin(),sortedIndexList.end());
-
-	sprintf(name, "data/%sScoresort.txt", whole_files[whole_file_index]);
-	file = fopen(name, "r");
-	if(file == NULL)
-		cerr << "SORTED FILE NOT FOUND" << endl;
-
-	sortedScoreList.clear();
-
-	float score;
-
-	while(true){
-		fscanf(file,"%f \n",&score);
-
-		sortedScoreList.push_back(score);
-
-		if(feof(file)){
-			break;
-		}
-	}
-	fclose(file);
-
-	// Score가 큰게 좋으므로 Reverse!
-	std::reverse(sortedScoreList.begin(),sortedScoreList.end());
 }
 
 void testApp::setNormalizationValues()
