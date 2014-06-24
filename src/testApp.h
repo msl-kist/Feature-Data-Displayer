@@ -55,6 +55,7 @@ class testApp : public ofBaseApp{
 
 		vector<cv::KeyPoint> keypoints;
 		vector<int>			sortedIndexList;
+		vector<float>		sortedScoreList;
 
 		int selectedKeypointRank;
 		int selectedKeypointIndex;
