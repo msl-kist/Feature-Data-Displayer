@@ -182,33 +182,9 @@ void testApp::keyPressed(int key){
 	
 	if(key == ' ')
 	{
-		ROC.init();
+		whole_file_index = (whole_file_index+1) % whole_files.size();
 
-		char name[100];
-
-		whole_file_index = (whole_file_index + 1) % whole_files.size();
-
-		sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index].c_str());
-		loadFile(name, &genuine_total, GENUINE);
-		genuine_total.setColor(ofColor::green);
-
-		sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index].c_str());
-		loadFile(name, &impostor_total, IMPOSTOR);
-		impostor_total.setColor(ofColor::red);
-
-		loadSortedIndexList(whole_file_index);
-
-		current_impostor = &impostor_total;
-		current_genuine = &genuine_total;
-		
-		ROC.update();
-		calculateROC();
-
-		// GUI 수정
-		ofxUILabel *label = (ofxUILabel *)gui->getWidget("Metric");
-		label->setLabel(whole_files[whole_file_index]);
-
-		setNormalizationValues();
+		ChangeScoreFunction();
 	}
 	if(key == 'b')
 		gui->toggleVisible();
@@ -438,7 +414,6 @@ void testApp::drawGUI()
 	gui->addToggle( "Fix Normalization Value", false, dim, dim);
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	//------------------------------
-	gui->addLabel("Metric", whole_files[whole_file_index]);
 
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	gui->addWidgetDown(new ofxUILabel(" ", OFX_UI_FONT_SMALL));
@@ -447,6 +422,7 @@ void testApp::drawGUI()
 
 	//--------------------------------------------------------------
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
+	gui->addLabel("Metric", whole_files[whole_file_index]);
 	gui->addTextInput("NewPrefix", "New Score Prefix", length-xInit);
 
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
@@ -492,6 +468,7 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 		ofxUITextInput *textinput = (ofxUITextInput *) e.widget; 
 		if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_ENTER){
 			whole_files.push_back(textinput->getTextString());
+			whole_file_index = whole_files.size()-1;
 			MakeSortedFiles(numOfKeypoints, textinput->getTextString().c_str());
 		}
 
@@ -787,4 +764,38 @@ void testApp::MakeSortedFiles(int keypointCount, const char * prefix)
 		fprintf(file,"%d\n", index[i]);
 	}
 	fclose(file);
+
+	// 파일 읽고 UI 갱신
+	//--------------------------------------------------------------
+	whole_file_index = whole_files.size() - 1;
+	ChangeScoreFunction();
+}
+
+void testApp::ChangeScoreFunction()
+{
+	ROC.init();
+
+	char name[100];
+
+	sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index].c_str());
+	loadFile(name, &genuine_total, GENUINE);
+	genuine_total.setColor(ofColor::green);
+
+	sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index].c_str());
+	loadFile(name, &impostor_total, IMPOSTOR);
+	impostor_total.setColor(ofColor::red);
+
+	loadSortedIndexList(whole_file_index);
+
+	current_impostor = &impostor_total;
+	current_genuine = &genuine_total;
+
+	ROC.update();
+	calculateROC();
+
+	// GUI 수정
+	ofxUILabel *label = (ofxUILabel *)gui->getWidget("Metric");
+	label->setLabel(whole_files[whole_file_index]);
+
+	setNormalizationValues();
 }
