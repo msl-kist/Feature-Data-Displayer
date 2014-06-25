@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <vector>
 
@@ -28,6 +29,7 @@ class testApp : public ofBaseApp{
 
 	public:
 		void setup();
+		void exit();
 
 		void calculateROC();
 
@@ -64,20 +66,19 @@ class testApp : public ofBaseApp{
 		ofxGaussianHistogram genuine;
 		ofxGaussianHistogram impostor;
 
-		int whole_file_index;
-
 		ofxGaussianHistogram genuine_total;
 		ofxGaussianHistogram impostor_total;
 
 		ofxGaussianHistogram * current_genuine;
 		ofxGaussianHistogram * current_impostor;
 
+		// GUI 관련
 		ofTrueTypeFont verdana;
 
 		ofxUICanvas *gui; 
 		void guiEvent(ofxUIEventArgs &e);
 		void loadSortedIndexList( int whole_file_index );
-
+		bool loadScoreFiles();
 		float normalizeValue_genuine;
 		float normalizeValue_Impostor;
 
@@ -85,8 +86,18 @@ class testApp : public ofBaseApp{
 		bool isFixedNormalization;
 		bool isGaussianMode;
 
+		vector<string> whole_files;
+		int whole_file_index;
+
+		// ROC 관련
 		ROC_Calc ROC;
 		ofxHistogramROC ROC_curve;
 		double EER_Candidate, EER;
 		int EER_bin;
+
+
+		// [윤식] 정렬된 스코어 저장
+		void MakeSortedFiles(int keypointCount, const char * prefix);
+		void Bubble_sort(vector<double> &Score, vector<cv::KeyPoint> &referenceKeyPoints, vector<int> &index);
+		int numOfKeypoints;
 };

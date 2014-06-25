@@ -4,10 +4,14 @@
 
 int iMargin = OFX_UI_GLOBAL_WIDGET_SPACING*2;
 
-char * whole_files[3] = {"[Match_count]", "[Original]", "[rep_div_med]"};
+//char * whole_files[3] = {"[Match_count]", "[Original]", "[rep_div_med]"};
 
 //--------------------------------------------------------------
 void testApp::setup(){
+	// Score 파일 로드
+	loadScoreFiles();
+	numOfKeypoints = 300;
+
 	// 이미지 로드
 	//--------------------------------------------------------------
 	image.loadImage("data/image.jpg");
@@ -28,11 +32,11 @@ void testApp::setup(){
 	char name[100];
 	ROC.init();
 
-	sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
+	sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index].c_str());
 	loadFile(name, &genuine_total, GENUINE);
 	genuine_total.setColor(ofColor::green);
 
-	sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
+	sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index].c_str());
 	loadFile(name, &impostor_total, IMPOSTOR);
 	impostor_total.setColor(ofColor::red);
 
@@ -50,10 +54,18 @@ void testApp::setup(){
 
 	ROC.update();
 	calculateROC();
-
-
-
 }
+
+void testApp::exit(){
+	// 스코어 세팅 파일 저장
+	//--------------------------------------------------------------
+	ofstream settings("data/score.settings");
+
+	for(int i=0; i<whole_files.size(); ++i)
+		settings << whole_files[i] << endl;
+	settings.close();
+}
+
 
 //--------------------------------------------------------------
 void testApp::update(){
@@ -174,13 +186,13 @@ void testApp::keyPressed(int key){
 
 		char name[100];
 
-		whole_file_index = (whole_file_index + 1) % 3;
+		whole_file_index = (whole_file_index + 1) % whole_files.size();
 
-		sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index]);
+		sprintf(name, "data/%sresult_genuine.txt",whole_files[whole_file_index].c_str());
 		loadFile(name, &genuine_total, GENUINE);
 		genuine_total.setColor(ofColor::green);
 
-		sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index]);
+		sprintf(name, "data/%sresult_imposter.txt",whole_files[whole_file_index].c_str());
 		loadFile(name, &impostor_total, IMPOSTOR);
 		impostor_total.setColor(ofColor::red);
 
@@ -432,7 +444,11 @@ void testApp::drawGUI()
 	gui->addWidgetDown(new ofxUILabel(" ", OFX_UI_FONT_SMALL));
 	gui->addWidgetDown(new ofxUILabel("EER value", OFX_UI_FONT_MEDIUM));
 	gui->addWidgetDown(new ofxUILabel("EER_Value", OFX_UI_FONT_SMALL));
-	
+
+	//--------------------------------------------------------------
+	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
+	gui->addTextInput("NewPrefix", "New Score Prefix", length-xInit);
+
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
 
 	
@@ -471,6 +487,15 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 
 		setNormalizationValues();
 	}
+	else if( name == "NewPrefix")
+	{
+		ofxUITextInput *textinput = (ofxUITextInput *) e.widget; 
+		if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_ENTER){
+			whole_files.push_back(textinput->getTextString());
+			MakeSortedFiles(numOfKeypoints, textinput->getTextString().c_str());
+		}
+
+	}
 }
 
 // 각 score에 의하여 정렬된 index 리스트를 읽음
@@ -478,7 +503,7 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 void testApp::loadSortedIndexList( int whole_file_index )
 {
 	char name[100];
-	sprintf(name, "data/%sindex.txt",whole_files[whole_file_index]);
+	sprintf(name, "data/%sindex.txt",whole_files[whole_file_index].c_str());
 
 	FILE *file;
 	int index;
@@ -504,7 +529,7 @@ void testApp::loadSortedIndexList( int whole_file_index )
 	// Score가 큰게 좋으므로 Reverse!
 	std::reverse(sortedIndexList.begin(),sortedIndexList.end());
 
-	sprintf(name, "data/%sScoresort.txt", whole_files[whole_file_index]);
+	sprintf(name, "data/%sScoresort.txt", whole_files[whole_file_index].c_str());
 	file = fopen(name, "r");
 	if(file == NULL)
 		cerr << "SORTED FILE NOT FOUND" << endl;
@@ -577,4 +602,189 @@ void testApp::calculateROC()
 	ofxUILabel* l;
 	l = (ofxUILabel*) gui->getWidget("EER_Value");
 	l->setLabel(ofToString(EER));
+}
+
+bool testApp::loadScoreFiles()
+{
+	ifstream myfile;
+	myfile.open ("data/score.settings");
+
+	if (myfile.is_open())
+	{
+		while ( !myfile.eof() )
+		{
+			string str;
+			myfile >> str;
+			if(str.length() > 0)
+				whole_files.push_back(str);
+		}
+		myfile.close();
+	}
+	else 
+	{
+		cout << "Unable to open file"; 
+		return false;
+	}
+
+	return true;
+}
+
+//Bubble sort
+void testApp::Bubble_sort(vector<double> &Score, vector<cv::KeyPoint> &referenceKeyPoints, vector<int> &index)
+{
+	double temp_score;
+	int temp_index;
+	cv::KeyPoint temp_keypoint;
+
+	for(int i=0;i<Score.size();i++)
+	{
+		for(int j=0;j<Score.size()-1;j++)
+		{
+			if(Score[j]>Score[j+1])
+			{
+				temp_score = Score[j];
+				Score[j] = Score[j+1];
+				Score[j+1] = temp_score;
+
+				temp_keypoint = referenceKeyPoints[j];
+				referenceKeyPoints[j] = referenceKeyPoints[j+1];
+				referenceKeyPoints[j+1] = temp_keypoint;
+
+				temp_index = index[j];
+				index[j] = index[j+1];
+				index[j+1] = temp_index;
+			}
+		}
+	}
+}
+
+// Score 파일 읽어서 상위 keypointCount 개수의 키포인트를 이용하여 Impostor / Genuine 분포 계산
+void testApp::MakeSortedFiles(int keypointCount, const char * prefix)
+{
+	FILE *file;
+	FILE *file1;
+	cv::FileStorage fs;
+	cv::FileStorage fss;
+
+	double num;
+	vector<double> Score;
+	vector<cv::KeyPoint> referenceKeyPoints;
+	vector<int> index;
+
+	int res;
+	char name[100];
+
+	sprintf(name, "data/%sScore.txt",prefix);
+	file = fopen(name,"rt");
+
+	sprintf(name, "data/%sScoresort.txt",prefix);
+	file1 = fopen(name,"wt");
+
+	fs.open("data/Data.xml", cv::FileStorage::READ);
+
+	sprintf(name, "data/%sDataSort.xml",prefix);
+	fss.open(name, cv::FileStorage::WRITE);
+
+	if(!fs.isOpened())
+	{
+		std::cout << "FILE NOT FOUND";
+		return;
+	}
+
+	sprintf(name, "K_%d_%d_%d_%d",1, -10, -1, -1);
+	cv::FileNode features = fs[name];
+	read(features, referenceKeyPoints);
+
+	// score 파일 읽기
+	while(1)
+	{
+		res = fscanf(file, "%lf\n", &num);
+		if(res ==  EOF)
+			break;
+		Score.push_back(num);
+		//fprintf(file1, "%.9lf\n", num);
+	}
+
+
+	for(int i=0;i<Score.size();i++){
+		index.push_back(i);
+	}
+
+	//sort(Score.rbegin(), Score.rend());		// 내림차순 정렬
+	Bubble_sort(Score, referenceKeyPoints, index);
+
+	//Score 정렬 파일 출력
+	for(int l= 0; l < Score.size(); l++)
+		fprintf(file1, "%.9lf\n", Score[l]);
+	fclose(file1);
+
+	//Score에 따른 Keypoint 정렬 파일 출력
+	sprintf(name, "D_%d_%d_%d_%d",1,1,1,2);
+	fss <<  "referenceKeyPoints" << referenceKeyPoints;
+
+
+	map<int, int>	selfSimilarity; 
+	map<int, int>	seperatibility;
+
+	int count = Score.size() - keypointCount;
+
+	for(int i=Score.size()-1; i >= count; i--){
+		//for(int i=0; i < 500; i++){
+		//3번 실험 데이터
+		sprintf(name,"data/impostor/3_%d",index[i]);
+		file = fopen(name,"r");
+		while(true){
+			int a, b;
+			fscanf(file,"%d %d\n",&a,&b);
+
+			seperatibility[a] += b;
+			if(feof(file)){
+				break;
+			}
+		}
+		fclose(file);
+
+		//2번실험 데이터
+		sprintf(name,"data/genuine/2_%d",index[i]);
+		file = fopen(name,"r");
+		while(true){
+			int a, b;
+			fscanf(file,"%d %d\n",&a,&b);
+
+			selfSimilarity[a] += b;
+			if(feof(file)){
+				break;
+			}
+		}
+		fclose(file);
+	}
+
+	map<int, int>::iterator Iter_Pos;
+	map<int, int>::iterator Iter_Pos1;
+	//2번 실험 출력
+	sprintf(name, "data/%sresult_genuine.txt",prefix);
+	Iter_Pos = seperatibility.end();
+	Iter_Pos--;
+
+	file = fopen(name,"w");
+	for(int i = 0 ; i<= Iter_Pos->first;i++){
+		fprintf(file,"%d %d\n", i, selfSimilarity[i]);
+	}
+	fclose(file);
+
+	//3번 실험 출력
+	sprintf(name, "data/%sresult_imposter.txt",prefix);
+	file = fopen(name,"w");
+	for(int i = 0 ; i<= Iter_Pos->first;i++){
+		fprintf(file,"%d %d\n", i, seperatibility[i]);
+	}
+	fclose(file);
+
+	//Index 출력
+	sprintf(name, "data/%sindex.txt",prefix);
+	file = fopen(name,"w");
+	for(int i=0; i< referenceKeyPoints.size();i++){
+		fprintf(file,"%d\n", index[i]);
+	}
+	fclose(file);
 }
