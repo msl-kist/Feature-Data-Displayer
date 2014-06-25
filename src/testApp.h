@@ -103,4 +103,5 @@ class testApp : public ofBaseApp{
 		void MakeSortedFiles(int keypointCount, const char * prefix);
 		void Bubble_sort(vector<double> &Score, vector<cv::KeyPoint> &referenceKeyPoints, vector<int> &index);
 		int numOfKeypoints;
+		float percentOfKeypoints;
 };

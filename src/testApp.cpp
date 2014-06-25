@@ -6,11 +6,13 @@ int iMargin = OFX_UI_GLOBAL_WIDGET_SPACING*2;
 
 //char * whole_files[3] = {"[Match_count]", "[Original]", "[rep_div_med]"};
 
+#define Percent2Number_ofKeypoints() (percentOfKeypoints/100 * keypoints.size())
+#define Number2Percent_ofKeypoints() ((float)numOfKeypoints / (float)keypoints.size() * 100)
+
 //--------------------------------------------------------------
 void testApp::setup(){
 	// Score 파일 로드
 	loadScoreFiles();
-	numOfKeypoints = 300;
 
 	// 이미지 로드
 	//--------------------------------------------------------------
@@ -19,6 +21,9 @@ void testApp::setup(){
 	// 키포인트 로드
 	//--------------------------------------------------------------
 	loadKeyPoint();
+
+	numOfKeypoints = 300;
+	percentOfKeypoints = Number2Percent_ofKeypoints();
 
 	selectedKeypointIndex = NOT_KEYPOINT;
 	selectedKeypointRank = 0;
@@ -403,8 +408,8 @@ void testApp::drawGUI()
 	//------------------------------
 	gui->addSlider("Score Rank", 0, keypoints.size()-1, selectedKeypointRank, _GUI_WIDTH - iMargin, dim);
 	//------------------------------
-	gui->addWidgetDown(new ofxUILabel("Score Value", OFX_UI_FONT_MEDIUM));
-	gui->addWidgetDown(new ofxUILabel("Score", OFX_UI_FONT_SMALL));
+	gui->addLabel("Score Value: ", OFX_UI_FONT_SMALL);
+	gui->addWidgetRight(new ofxUILabel("Score", OFX_UI_FONT_MEDIUM));
 
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	gui->addToggle( "Genuine First", false, dim, dim);
@@ -417,13 +422,18 @@ void testApp::drawGUI()
 
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	gui->addWidgetDown(new ofxUILabel(" ", OFX_UI_FONT_SMALL));
-	gui->addWidgetDown(new ofxUILabel("EER value", OFX_UI_FONT_MEDIUM));
-	gui->addWidgetDown(new ofxUILabel("EER_Value", OFX_UI_FONT_SMALL));
+	gui->addWidgetDown(new ofxUILabel("EER value: ", OFX_UI_FONT_SMALL));
+	gui->addWidgetRight(new ofxUILabel("EER_Value", OFX_UI_FONT_MEDIUM));
 
 	//--------------------------------------------------------------
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
-	gui->addLabel("Metric", whole_files[whole_file_index]);
-	gui->addTextInput("NewPrefix", "New Score Prefix", length-xInit);
+	gui->addLabel("lblCurrentScore", "Current: ", OFX_UI_FONT_SMALL);
+	gui->addWidgetRight(new ofxUILabel("Metric", whole_files[whole_file_index], OFX_UI_FONT_MEDIUM));
+	gui->addLabel("lblNewScore", "New: ", OFX_UI_FONT_SMALL);
+	gui->addWidgetRight(new ofxUITextInput("NewPrefix", "New Prefix", length-xInit - 50));
+	gui->addTextInput("percentOfKeyPoints", ofToString(percentOfKeypoints), length-xInit-50)->setAutoClear(true);
+	gui->addWidgetRight(new ofxUILabel("%", OFX_UI_FONT_MEDIUM));
+	gui->addLabelButton("PROCESS NEW SCORE", false, length-xInit);
 
 	ofAddListener(gui->newGUIEvent,this,&testApp::guiEvent);
 
@@ -463,13 +473,23 @@ void testApp::guiEvent(ofxUIEventArgs &e)
 
 		setNormalizationValues();
 	}
-	else if( name == "NewPrefix")
+	else if( name == "PROCESS NEW SCORE")
 	{
-		ofxUITextInput *textinput = (ofxUITextInput *) e.widget; 
-		if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_ENTER){
+		ofxUIButton *btn = (ofxUIButton*)e.widget;
+		if(btn->getValue() == true)		// 버튼 클릭됨
+		{
+			// Prefix 처리
+			ofxUITextInput *textinput = (ofxUITextInput*) gui->getWidget("NewPrefix");
+
 			whole_files.push_back(textinput->getTextString());
 			whole_file_index = whole_files.size()-1;
-			MakeSortedFiles(numOfKeypoints, textinput->getTextString().c_str());
+
+			textinput = (ofxUITextInput *)gui->getWidget("percentOfKeyPoints");
+
+			percentOfKeypoints = ofToFloat(textinput->getTextString());
+			numOfKeypoints = Percent2Number_ofKeypoints();
+
+			MakeSortedFiles(numOfKeypoints, whole_files[whole_file_index].c_str());
 		}
 
 	}
@@ -572,7 +592,8 @@ void testApp::calculateROC()
 			EER_bin = i;
 		}
 	}
-	ROC_curve.resize(0, ROC.Specificity.size());
+	//ROC_curve.resize(0, ROC.Specificity.size());
+	ROC_curve.resize(0, 1);
 	ROC_curve.setColor(ofColor(255, 255, 0, 100));
 
 	//GUI에 반영
