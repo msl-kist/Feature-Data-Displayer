@@ -232,6 +232,14 @@ public:
 		data.clear();
 	}
 
+	int getTotalCount()
+	{
+		int count = 0;
+		for(iterator = data.begin(); iterator != data.end(); ++iterator)
+			count += iterator->second;
+		return count;
+	}
+
 protected:
 	// Histogram Parameters
 	int min;
