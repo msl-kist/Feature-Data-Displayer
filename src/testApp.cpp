@@ -98,6 +98,10 @@ void testApp::update(){
 		ofxUILabel * label = (ofxUILabel*)gui->getWidget("Score");
 		label->setLabel( ofToString( sortedScoreList[selectedKeypointRank] ));
 
+		// GUI의 index를 저장
+		label = (ofxUILabel *) gui->getWidget("Index");
+		label->setLabel( ofToString( selectedKeypointIndex ) );
+
 		processed = true;
 	}
 }
@@ -410,6 +414,8 @@ void testApp::drawGUI()
 	//------------------------------
 	gui->addLabel("Score Value: ", OFX_UI_FONT_SMALL);
 	gui->addWidgetRight(new ofxUILabel("Score", OFX_UI_FONT_MEDIUM));
+	gui->addLabel("KP Index: ", OFX_UI_FONT_SMALL);
+	gui->addWidgetRight(new ofxUILabel("Index", OFX_UI_FONT_MEDIUM));
 
 	gui->addSpacer(_GUI_WIDTH-iMargin, 1);
 	gui->addToggle( "Genuine First", false, dim, dim);
